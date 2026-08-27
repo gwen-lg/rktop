@@ -30,7 +30,7 @@ use hardware::{
 };
 use sysinfo_ext::{get_cpu_stats, get_top_processes, get_zram_info, CpuStats};
 
-use crate::hardware::gpu_present;
+use crate::hardware::{get_gpu_engine_usage, gpu_present};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ProcessSortMode {
@@ -983,6 +983,22 @@ fn render_gpu_panel(f: &mut Frame, area: Rect, app_state: &AppState) {
             Span::raw(freq_str),
         ])],
     };
+
+    // The headline reports the busiest engine, so show the split too.
+    let engines = get_gpu_engine_usage();
+    if engines.len() > 1 {
+        let mut spans = vec![Span::raw("      ")];
+        for (i, (name, pct)) in engines.iter().enumerate() {
+            if i > 0 {
+                spans.push(Span::raw("  "));
+            }
+            spans.push(Span::styled(
+                format!("{name} {pct:.1}%"),
+                Style::default().fg(Color::DarkGray),
+            ));
+        }
+        lines.push(Line::from(spans));
+    }
 
     // Add sparkline if we have history
     if !app_state.gpu_history.is_empty() {
