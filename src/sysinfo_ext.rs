@@ -1,9 +1,10 @@
-use crate::ProcessSortMode;
-use std::cmp::Ordering;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::sync::Mutex;
-use std::{cmp, collections::HashMap};
+use std::{cmp, cmp::Ordering};
 use sysinfo::{Process, System};
+
+use crate::ProcessSortMode;
 
 // Global cache for UID to username mappings
 static USER_CACHE: Mutex<Option<HashMap<u32, String>>> = Mutex::new(None);
@@ -102,6 +103,8 @@ pub fn get_top_processes(
         }
     }
 
+    let leaders = thread_group_leaders();
+
     // Second pass: only read detailed info for top N processes
     minimal_processes
         .into_iter()
@@ -111,11 +114,21 @@ pub fn get_top_processes(
             let user = get_process_user(process);
             let runtime = process.run_time();
 
-            // Only read extended info for top N processes
-            let nice = get_process_nice(pid_u32);
-            let cpu_core = get_process_cpu_core(pid_u32);
-            let (thread_group_id, is_thread, num_threads, state, _num_fds) =
-                get_process_extended_info(pid_u32);
+            // One read covers nice, CPU core, state and thread count.
+            let stat = read_proc_stat(pid_u32);
+            let nice = stat.as_ref().map_or(0, |s| s.nice);
+            let cpu_core = stat.as_ref().map_or(0, |s| s.processor);
+            let num_threads = stat.as_ref().map_or(1, |s| s.num_threads);
+            let state = stat.as_ref().map_or('U', |s| s.state);
+            // A pid listed in /proc is its own thread group leader. For the
+            // rest, sysinfo already recorded the owning process as the
+            // parent, so no file has to be read at all.
+            let thread_group_id = if leaders.contains(&pid_u32) {
+                pid_u32
+            } else {
+                process.parent().map_or(pid_u32, sysinfo::Pid::as_u32)
+            };
+            let is_thread = pid_u32 != thread_group_id;
 
             ProcessInfo {
                 pid: pid_u32,
@@ -135,84 +148,49 @@ pub fn get_top_processes(
         .collect()
 }
 
-fn get_process_nice(pid: u32) -> i32 {
-    // Read nice level from /proc/<pid>/stat
-    let stat_path = format!("/proc/{pid}/stat");
-    if let Ok(content) = fs::read_to_string(&stat_path) {
-        // The nice value is the 19th field in /proc/pid/stat
-        let fields: Vec<&str> = content.split_whitespace().collect();
-        if fields.len() >= 19 {
-            if let Ok(nice) = fields[18].parse::<i32>() {
-                return nice;
-            }
-        }
-    }
-    0 // Default nice value
+/// The fields of /proc/<pid>/stat that this tool needs.
+struct ProcStat {
+    state: char,
+    nice: i32,
+    num_threads: u32,
+    processor: u32,
 }
 
-fn get_process_cpu_core(pid: u32) -> u32 {
-    // Read current CPU core from /proc/<pid>/stat
-    let stat_path = format!("/proc/{pid}/stat");
-    if let Ok(content) = fs::read_to_string(&stat_path) {
-        // The processor (CPU core) is the 39th field in /proc/pid/stat
-        let fields: Vec<&str> = content.split_whitespace().collect();
-        if fields.len() >= 39 {
-            if let Ok(cpu_core) = fields[38].parse::<u32>() {
-                return cpu_core;
-            }
-        }
-    }
-    0 // Default to core 0
+/// Read and parse /proc/<pid>/stat once.
+///
+/// Fields are located relative to the last ')' rather than by splitting the
+/// whole line: the command name is parenthesised and may contain spaces,
+/// which shifts every later field.
+fn read_proc_stat(pid: u32) -> Option<ProcStat> {
+    let content = fs::read_to_string(format!("/proc/{pid}/stat")).ok()?;
+    let after_comm = &content[content.rfind(')')? + 1..];
+    let fields: Vec<&str> = after_comm.split_whitespace().collect();
+
+    // fields[0] is stat field 3, so stat field N is at index N - 3.
+    let field = |n: usize| fields.get(n - 3).copied();
+
+    Some(ProcStat {
+        state: field(3).and_then(|f| f.chars().next()).unwrap_or('U'),
+        nice: field(19).and_then(|f| f.parse().ok()).unwrap_or(0),
+        num_threads: field(20).and_then(|f| f.parse().ok()).unwrap_or(1),
+        processor: field(39).and_then(|f| f.parse().ok()).unwrap_or(0),
+    })
 }
 
-/// Get consolidated process info from /proc/[pid]/status and /proc/[pid]/stat
-/// Returns (`tgid`, `is_thread`, `num_threads`, `state`, `num_fds`)
-/// This reads files once instead of multiple times
-fn get_process_extended_info(pid: u32) -> (u32, bool, u32, char, u32) {
-    let mut tgid = pid;
-    let mut num_threads = 1;
-    let mut state = 'U';
-
-    // Read /proc/[pid]/status once for TGID and thread count
-    let status_path = format!("/proc/{pid}/status");
-    if let Ok(content) = fs::read_to_string(&status_path) {
-        for line in content.lines() {
-            if line.starts_with("Tgid:") {
-                if let Some(tgid_str) = line.split_whitespace().nth(1) {
-                    if let Ok(parsed_tgid) = tgid_str.parse::<u32>() {
-                        tgid = parsed_tgid;
-                    }
-                }
-            } else if line.starts_with("Threads:") {
-                if let Some(threads_str) = line.split_whitespace().nth(1) {
-                    if let Ok(threads) = threads_str.parse::<u32>() {
-                        num_threads = threads;
-                    }
-                }
+/// The pids listed in /proc, which are exactly the thread group leaders.
+///
+/// Reading this once per refresh avoids a /proc/<pid>/status read for every
+/// process that is not a thread, which is most of them.
+fn thread_group_leaders() -> HashSet<u32> {
+    let mut leaders = HashSet::new();
+    if let Ok(entries) = fs::read_dir("/proc") {
+        for entry in entries.flatten() {
+            if let Ok(pid) = entry.file_name().to_string_lossy().parse::<u32>() {
+                leaders.insert(pid);
             }
         }
     }
-
-    let is_thread = pid != tgid;
-
-    // Read /proc/[pid]/stat once for state
-    let stat_path = format!("/proc/{pid}/stat");
-    if let Ok(content) = fs::read_to_string(&stat_path) {
-        // State is the field after the command name (which is in parentheses)
-        if let Some(paren_end) = content.rfind(')') {
-            let after_name = &content[paren_end + 1..];
-            if let Some(state_char) = after_name.trim().chars().next() {
-                state = state_char;
-            }
-        }
-    }
-
-    // Skip file descriptor counting entirely - it's very expensive
-    // Counting FDs requires opening and iterating /proc/[pid]/fd directory
-    // For a system with 200+ processes, this adds significant overhead
-    let num_fds = 0;
-
-    (tgid, is_thread, num_threads, state, num_fds)
+    leaders
 }
 
 fn get_process_user(process: &Process) -> String {
