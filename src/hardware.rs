@@ -430,25 +430,7 @@ pub fn get_cpu_architecture() -> String {
             // Collect all core types found
             let mut core_names = Vec::new();
             for part_val in &parts {
-                let core_name = match part_val.as_str() {
-                    "0xd03" => Some("A53"),
-                    "0xd04" => Some("A35"),
-                    "0xd05" => Some("A55"),
-                    "0xd07" => Some("A57"),
-                    "0xd08" => Some("A72"),
-                    "0xd09" => Some("A73"),
-                    "0xd0a" => Some("A75"),
-                    "0xd0b" => Some("A76"),
-                    "0xd0d" => Some("A77"),
-                    "0xd40" => Some("N1"),
-                    "0xd41" => Some("A78"),
-                    "0xd44" => Some("X1"),
-                    "0xd46" => Some("A510"),
-                    "0xd47" => Some("A710"),
-                    "0xd48" => Some("X2"),
-                    "0xd4d" => Some("A715"),
-                    _ => None,
-                };
+                let core_name = core_hex_to_name(part_val);
                 if let Some(name) = core_name {
                     core_names.push(name);
                 }
@@ -472,6 +454,28 @@ pub fn get_cpu_architecture() -> String {
     }
 
     "Unknown".to_string()
+}
+
+fn core_hex_to_name(hex_code: &str) -> Option<&str> {
+    match hex_code {
+        "0xd03" => Some("A53"),
+        "0xd04" => Some("A35"),
+        "0xd05" => Some("A55"),
+        "0xd07" => Some("A57"),
+        "0xd08" => Some("A72"),
+        "0xd09" => Some("A73"),
+        "0xd0a" => Some("A75"),
+        "0xd0b" => Some("A76"),
+        "0xd0d" => Some("A77"),
+        "0xd40" => Some("N1"),
+        "0xd41" => Some("A78"),
+        "0xd44" => Some("X1"),
+        "0xd46" => Some("A510"),
+        "0xd47" => Some("A710"),
+        "0xd48" => Some("X2"),
+        "0xd4d" => Some("A715"),
+        _ => None,
+    }
 }
 
 /// Read RGA driver version
