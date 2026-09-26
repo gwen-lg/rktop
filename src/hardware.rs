@@ -1,6 +1,6 @@
 use crate::file_cache::{read_cached_file, read_cached_i32, read_cached_u32};
 use goblin::Object;
-use regex::Regex;
+use regex::{regex, Regex};
 use std::fs;
 use std::path::Path;
 
@@ -527,6 +527,7 @@ fn extract_version_from_binary(path: &str, pattern: &str) -> String {
 
     // For ELF binaries, search through the .rodata section
     if let Object::Elf(elf) = obj {
+        let re = regex!(r"(\d+\.\d+\.\d+)");
         for section in elf.section_headers.iter() {
             // Look in .rodata or any section that might contain strings
             if let Some(name) = elf.shdr_strtab.get_at(section.sh_name) {
@@ -543,7 +544,6 @@ fn extract_version_from_binary(path: &str, pattern: &str) -> String {
                         // Find the pattern and extract version number
                         if let Some(pos) = text.find(pattern) {
                             let substr = &text[pos..];
-                            let re = Regex::new(r"(\d+\.\d+\.\d+)").unwrap();
                             if let Some(cap) = re.captures(substr) {
                                 return cap[1].to_string();
                             }
