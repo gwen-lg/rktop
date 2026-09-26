@@ -517,7 +517,7 @@ fn run_app(
                     } else {
                         // Normal mode keyboard shortcuts
                         match key.code {
-                            KeyCode::Char('q') | KeyCode::Char('Q') => {
+                            KeyCode::Char('q' | 'Q') => {
                                 return Ok(());
                             }
                             KeyCode::Char('/') => {
@@ -528,28 +528,28 @@ fn run_app(
                                 // Clear filter when ESC pressed in normal mode
                                 app_state.filter_text.clear();
                             }
-                            KeyCode::Char('c') | KeyCode::Char('C') => {
+                            KeyCode::Char('c' | 'C') => {
                                 app_state.process_sort_mode = match app_state.process_sort_mode {
                                     ProcessSortMode::CpuDesc => ProcessSortMode::CpuAsc,
                                     ProcessSortMode::CpuAsc => ProcessSortMode::CpuDesc,
                                     _ => ProcessSortMode::CpuDesc,
                                 };
                             }
-                            KeyCode::Char('m') | KeyCode::Char('M') => {
+                            KeyCode::Char('m' | 'M') => {
                                 app_state.process_sort_mode = match app_state.process_sort_mode {
                                     ProcessSortMode::MemoryDesc => ProcessSortMode::MemoryAsc,
                                     ProcessSortMode::MemoryAsc => ProcessSortMode::MemoryDesc,
                                     _ => ProcessSortMode::MemoryDesc,
                                 };
                             }
-                            KeyCode::Char('p') | KeyCode::Char('P') => {
+                            KeyCode::Char('p' | 'P') => {
                                 app_state.process_sort_mode = match app_state.process_sort_mode {
                                     ProcessSortMode::PidAsc => ProcessSortMode::PidDesc,
                                     ProcessSortMode::PidDesc => ProcessSortMode::PidAsc,
                                     _ => ProcessSortMode::PidAsc,
                                 };
                             }
-                            KeyCode::Char('n') | KeyCode::Char('N') => {
+                            KeyCode::Char('n' | 'N') => {
                                 app_state.process_sort_mode = match app_state.process_sort_mode {
                                     ProcessSortMode::NameAsc => ProcessSortMode::NameDesc,
                                     ProcessSortMode::NameDesc => ProcessSortMode::NameAsc,
