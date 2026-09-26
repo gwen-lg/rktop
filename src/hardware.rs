@@ -517,7 +517,7 @@ fn extract_version_from_binary(path: &str, pattern: &str) -> String {
     // For ELF binaries, search through the .rodata section
     if let Object::Elf(elf) = obj {
         let re = regex!(r"(\d+\.\d+\.\d+)");
-        for section in elf.section_headers.iter() {
+        for section in &elf.section_headers {
             // Look in .rodata or any section that might contain strings
             if let Some(name) = elf.shdr_strtab.get_at(section.sh_name) {
                 if name == ".rodata" || name.contains("data") {
