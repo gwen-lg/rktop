@@ -903,7 +903,7 @@ fn render_system_panel(f: &mut Frame, area: Rect, app_state: &AppState) {
         .unwrap_or_else(|| "Unknown".to_string());
 
     // Build table with two columns
-    let row_data = vec![
+    let row_data = [
         (
             format!("Board: {}", app_state.board_name),
             format!("Host: {}", hostname),
