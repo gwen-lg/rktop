@@ -334,7 +334,7 @@ pub fn get_rga_load() -> Option<Vec<(String, f32)>> {
         for line in lines {
             let line = line.trim();
 
-            if line.contains("-") || line.contains("= load =") {
+            if line.contains('-') || line.contains("= load =") {
                 continue;
             }
 
