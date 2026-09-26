@@ -425,8 +425,6 @@ pub fn get_cpu_architecture() -> String {
 
         // Build architecture string
         if let Some(arch_val) = arch {
-            let mut result = format!("ARMv{arch_val}");
-
             // Collect all core types found
             let mut core_names = Vec::new();
             for part_val in &parts {
@@ -437,12 +435,14 @@ pub fn get_cpu_architecture() -> String {
             }
 
             // Sort and add to result
-            if !core_names.is_empty() {
+            let core_names = if !core_names.is_empty() {
                 core_names.sort();
-                result.push_str(&format!(" ({})", core_names.join("+")));
-            }
+                format!(" ({})", core_names.join("+"))
+            } else {
+                String::new()
+            };
 
-            return result;
+            return format!("ARMv{arch_val}{core_names}");
         }
     }
 
