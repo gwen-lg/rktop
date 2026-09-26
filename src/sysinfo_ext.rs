@@ -1,8 +1,8 @@
+use crate::ProcessSortMode;
 use std::collections::HashMap;
 use std::fs;
 use std::sync::Mutex;
 use sysinfo::{Process, System};
-use crate::ProcessSortMode;
 
 // Global cache for UID to username mappings
 static USER_CACHE: Mutex<Option<HashMap<u32, String>>> = Mutex::new(None);
@@ -15,12 +15,12 @@ pub struct ProcessInfo {
     pub cpu: f32,
     pub mem: f32,
     pub nice: i32,
-    pub runtime: u64, // in seconds
-    pub cpu_core: u32, // Which CPU core process is running on
-    pub is_thread: bool, // Is this a thread of another process?
+    pub runtime: u64,         // in seconds
+    pub cpu_core: u32,        // Which CPU core process is running on
+    pub is_thread: bool,      // Is this a thread of another process?
     pub thread_group_id: u32, // TGID - the main process ID for threads
-    pub state: char, // Process state: R, S, D, Z, T, etc.
-    pub num_threads: u32, // Number of threads in this process
+    pub state: char,          // Process state: R, S, D, Z, T, etc.
+    pub num_threads: u32,     // Number of threads in this process
 }
 
 #[derive(Debug, Clone)]
@@ -43,7 +43,11 @@ impl ZramInfo {
 }
 
 /// Get top processes with configurable sorting
-pub fn get_top_processes(sys: &System, count: usize, sort_mode: ProcessSortMode) -> Vec<ProcessInfo> {
+pub fn get_top_processes(
+    sys: &System,
+    count: usize,
+    sort_mode: ProcessSortMode,
+) -> Vec<ProcessInfo> {
     // First pass: collect minimal info and sort
     let mut minimal_processes: Vec<_> = sys
         .processes()
@@ -82,13 +86,17 @@ pub fn get_top_processes(sys: &System, count: usize, sort_mode: ProcessSortMode)
         }
         ProcessSortMode::NameAsc => {
             minimal_processes.sort_by(|a, b| {
-                a.1.name().to_string_lossy().to_lowercase()
+                a.1.name()
+                    .to_string_lossy()
+                    .to_lowercase()
                     .cmp(&b.1.name().to_string_lossy().to_lowercase())
             });
         }
         ProcessSortMode::NameDesc => {
             minimal_processes.sort_by(|a, b| {
-                b.1.name().to_string_lossy().to_lowercase()
+                b.1.name()
+                    .to_string_lossy()
+                    .to_lowercase()
                     .cmp(&a.1.name().to_string_lossy().to_lowercase())
             });
         }

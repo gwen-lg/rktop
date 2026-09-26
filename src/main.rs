@@ -17,9 +17,9 @@ use std::io;
 use std::time::{Duration, Instant};
 use sysinfo::{Disks, Networks, ProcessesToUpdate, System};
 
+mod file_cache;
 mod hardware;
 mod sysinfo_ext;
-mod file_cache;
 
 use hardware::*;
 use sysinfo_ext::*;
@@ -39,11 +39,11 @@ pub enum ProcessSortMode {
 /// Configurable refresh rates (in seconds)
 #[derive(Debug, Clone)]
 struct RefreshConfig {
-    cpu_memory: u64,    // CPU and memory refresh
-    network_disk: u64,  // Network and disk I/O
-    processes: u64,     // Process list
+    cpu_memory: u64,   // CPU and memory refresh
+    network_disk: u64, // Network and disk I/O
+    processes: u64,    // Process list
     #[allow(dead_code)]
-    stats: u64,         // Governor, TCP connections, etc. (currently unused, for future use)
+    stats: u64, // Governor, TCP connections, etc. (currently unused, for future use)
 }
 
 impl Default for RefreshConfig {
@@ -51,7 +51,7 @@ impl Default for RefreshConfig {
         Self {
             cpu_memory: 1,
             network_disk: 2,
-            processes: 2,     // Keep responsive at 2 seconds
+            processes: 2, // Keep responsive at 2 seconds
             stats: 5,
         }
     }
@@ -81,7 +81,16 @@ fn main() -> Result<()> {
     let mut last_process_update = Instant::now();
     let mut last_network_update = Instant::now();
 
-    let result = run_app(&mut terminal, &mut sys, &mut networks, &mut disks, &mut app_state, &mut last_update, &mut last_process_update, &mut last_network_update);
+    let result = run_app(
+        &mut terminal,
+        &mut sys,
+        &mut networks,
+        &mut disks,
+        &mut app_state,
+        &mut last_update,
+        &mut last_process_update,
+        &mut last_network_update,
+    );
 
     // Restore terminal
     disable_raw_mode()?;
@@ -248,7 +257,8 @@ impl AppState {
         // Update NPU history (average across cores)
         let npu_loads = get_npu_load();
         if !npu_loads.is_empty() {
-            let avg_npu: f32 = npu_loads.iter().map(|&x| x as f32).sum::<f32>() / npu_loads.len() as f32;
+            let avg_npu: f32 =
+                npu_loads.iter().map(|&x| x as f32).sum::<f32>() / npu_loads.len() as f32;
             self.npu_history.push_back(avg_npu);
             if self.npu_history.len() > MAX_HISTORY {
                 self.npu_history.pop_front();
@@ -263,9 +273,12 @@ impl AppState {
 
         if elapsed >= 1.0 {
             // Calculate rates per second
-            self.ctx_switches_rate = ((cpu_stats.context_switches - self.prev_ctx_switches) as f64 / elapsed) as u64;
-            self.interrupts_rate = ((cpu_stats.interrupts - self.prev_interrupts) as f64 / elapsed) as u64;
-            self.softirqs_rate = ((cpu_stats.softirqs - self.prev_softirqs) as f64 / elapsed) as u64;
+            self.ctx_switches_rate =
+                ((cpu_stats.context_switches - self.prev_ctx_switches) as f64 / elapsed) as u64;
+            self.interrupts_rate =
+                ((cpu_stats.interrupts - self.prev_interrupts) as f64 / elapsed) as u64;
+            self.softirqs_rate =
+                ((cpu_stats.softirqs - self.prev_softirqs) as f64 / elapsed) as u64;
 
             // Calculate CPU time percentages
             let user_delta = cpu_stats.user - self.prev_cpu_time.user;
@@ -276,11 +289,19 @@ impl AppState {
             let irq_delta = cpu_stats.irq - self.prev_cpu_time.irq;
             let softirq_delta = cpu_stats.softirq - self.prev_cpu_time.softirq;
 
-            let total_delta = user_delta + nice_delta + system_delta + idle_delta + iowait_delta + irq_delta + softirq_delta;
+            let total_delta = user_delta
+                + nice_delta
+                + system_delta
+                + idle_delta
+                + iowait_delta
+                + irq_delta
+                + softirq_delta;
 
             if total_delta > 0 {
                 self.cpu_user_pct = ((user_delta + nice_delta) as f64 / total_delta as f64) * 100.0;
-                self.cpu_system_pct = ((system_delta + irq_delta + softirq_delta) as f64 / total_delta as f64) * 100.0;
+                self.cpu_system_pct = ((system_delta + irq_delta + softirq_delta) as f64
+                    / total_delta as f64)
+                    * 100.0;
                 self.cpu_iowait_pct = (iowait_delta as f64 / total_delta as f64) * 100.0;
                 self.cpu_idle_pct = (idle_delta as f64 / total_delta as f64) * 100.0;
             }
@@ -305,10 +326,11 @@ impl AppState {
         }
 
         // CPU governor
-        self.cpu_governor = std::fs::read_to_string("/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor")
-            .unwrap_or_else(|_| "N/A".to_string())
-            .trim()
-            .to_string();
+        self.cpu_governor =
+            std::fs::read_to_string("/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor")
+                .unwrap_or_else(|_| "N/A".to_string())
+                .trim()
+                .to_string();
 
         // Active TCP connections (count external established connections only, IPv4 + IPv6)
         let mut count = 0;
@@ -375,7 +397,9 @@ impl AppState {
 
         for (name, data) in networks.list() {
             // Skip interfaces not in our cached adapter list (filters out virtual interfaces)
-            if !self.network_adapters.is_empty() && !self.network_adapters.contains(&name.to_string()) {
+            if !self.network_adapters.is_empty()
+                && !self.network_adapters.contains(&name.to_string())
+            {
                 continue;
             }
 
@@ -389,7 +413,8 @@ impl AppState {
                 if let Some(&(prev_rx, prev_tx)) = self.prev_adapter_stats.get(name) {
                     let rx_rate = (rx.saturating_sub(prev_rx)) as f64 / interval;
                     let tx_rate = (tx.saturating_sub(prev_tx)) as f64 / interval;
-                    self.adapter_rates.insert(name.to_string(), (rx_rate, tx_rate));
+                    self.adapter_rates
+                        .insert(name.to_string(), (rx_rate, tx_rate));
                 }
             }
 
@@ -397,8 +422,10 @@ impl AppState {
         }
 
         if interval > 0.0 {
-            self.disk_read_rate = (total_read.saturating_sub(self.prev_disk_read)) as f64 / interval;
-            self.disk_write_rate = (total_write.saturating_sub(self.prev_disk_write)) as f64 / interval;
+            self.disk_read_rate =
+                (total_read.saturating_sub(self.prev_disk_read)) as f64 / interval;
+            self.disk_write_rate =
+                (total_write.saturating_sub(self.prev_disk_write)) as f64 / interval;
             self.net_rx_rate = (total_rx.saturating_sub(self.prev_net_rx)) as f64 / interval;
             self.net_tx_rate = (total_tx.saturating_sub(self.prev_net_tx)) as f64 / interval;
         }
@@ -606,7 +633,8 @@ fn render_sparkline(data: &VecDeque<f32>, max_value: f32) -> String {
             } else {
                 0.0
             };
-            let index = ((normalized * (blocks.len() - 1) as f32).round() as usize).min(blocks.len() - 1);
+            let index =
+                ((normalized * (blocks.len() - 1) as f32).round() as usize).min(blocks.len() - 1);
             blocks[index]
         })
         .collect()
@@ -617,7 +645,8 @@ fn render_cpu_panel(f: &mut Frame, area: Rect, sys: &System, app_state: &AppStat
     let cpu_freqs = get_cpu_frequencies();
 
     // Calculate total CPU usage across all cores
-    let total_cpu_usage: f32 = cpus.iter().map(|cpu| cpu.cpu_usage()).sum::<f32>() / cpus.len() as f32;
+    let total_cpu_usage: f32 =
+        cpus.iter().map(|cpu| cpu.cpu_usage()).sum::<f32>() / cpus.len() as f32;
 
     let mut cpu_info: Vec<Line> = cpus
         .iter()
@@ -642,10 +671,13 @@ fn render_cpu_panel(f: &mut Frame, area: Rect, sys: &System, app_state: &AppStat
     // Add sparkline if we have history
     if !app_state.cpu_history.is_empty() {
         let sparkline = render_sparkline(&app_state.cpu_history, 100.0);
-        cpu_info.insert(1, Line::from(vec![
-            Span::raw("History:   "),
-            Span::styled(sparkline, Style::default().fg(Color::Cyan)),
-        ]));
+        cpu_info.insert(
+            1,
+            Line::from(vec![
+                Span::raw("History:   "),
+                Span::styled(sparkline, Style::default().fg(Color::Cyan)),
+            ]),
+        );
     }
 
     // Add blank line
@@ -662,11 +694,15 @@ fn render_cpu_panel(f: &mut Frame, area: Rect, sys: &System, app_state: &AppStat
 
     // Frequency ranges (show all clusters) - use cached value
     if !app_state.cpu_freq_ranges.is_empty() {
-        let ranges_str: Vec<String> = app_state.cpu_freq_ranges
+        let ranges_str: Vec<String> = app_state
+            .cpu_freq_ranges
             .iter()
             .map(|(min, max)| format!("{}-{} MHz", min, max))
             .collect();
-        cpu_info.push(Line::from(format!("Freq ranges: {}", ranges_str.join(", "))));
+        cpu_info.push(Line::from(format!(
+            "Freq ranges: {}",
+            ranges_str.join(", ")
+        )));
     }
 
     // Add blank line
@@ -675,14 +711,22 @@ fn render_cpu_panel(f: &mut Frame, area: Rect, sys: &System, app_state: &AppStat
     // Process counts
     cpu_info.push(Line::from(format!(
         "Running: {}  Blocked: {}",
-        app_state.running_procs,
-        app_state.blocked_procs
+        app_state.running_procs, app_state.blocked_procs
     )));
 
     // Interrupt stats
-    cpu_info.push(Line::from(format!("Ctx switches: {}/s", format_number(app_state.ctx_switches_rate))));
-    cpu_info.push(Line::from(format!("Interrupts:   {}/s", format_number(app_state.interrupts_rate))));
-    cpu_info.push(Line::from(format!("Softirqs:     {}/s", format_number(app_state.softirqs_rate))));
+    cpu_info.push(Line::from(format!(
+        "Ctx switches: {}/s",
+        format_number(app_state.ctx_switches_rate)
+    )));
+    cpu_info.push(Line::from(format!(
+        "Interrupts:   {}/s",
+        format_number(app_state.interrupts_rate)
+    )));
+    cpu_info.push(Line::from(format!(
+        "Softirqs:     {}/s",
+        format_number(app_state.softirqs_rate)
+    )));
 
     let block = Block::default()
         .title("CPU")
@@ -772,7 +816,11 @@ fn render_memory_panel(f: &mut Frame, area: Rect, sys: &System) {
                     zram_percent,
                     human_bytes(info.used),
                     human_bytes(info.limit),
-                    if ratio > 0.0 { format!("{:.1}", ratio) } else { "N/A".to_string() }
+                    if ratio > 0.0 {
+                        format!("{:.1}", ratio)
+                    } else {
+                        "N/A".to_string()
+                    }
                 )
             } else {
                 " N/A".to_string()
@@ -856,12 +904,30 @@ fn render_system_panel(f: &mut Frame, area: Rect, app_state: &AppState) {
 
     // Build table with two columns
     let row_data = vec![
-        (format!("Board: {}", app_state.board_name), format!("Host: {}", hostname)),
-        (format!("SoC: {}", app_state.rk_model), format!("Kernel: {}", kernel)),
-        (format!("NPU Driver:    {}", app_state.npu_version), format!("Arch: {}", app_state.cpu_arch)),
-        (format!("RGA Driver:    {}", app_state.rga_version), String::new()),
-        (format!("RKNN Runtime:  {}", app_state.rknn_version), String::new()),
-        (format!("RKLLM Runtime: {}", app_state.rkllm_version), String::new()),
+        (
+            format!("Board: {}", app_state.board_name),
+            format!("Host: {}", hostname),
+        ),
+        (
+            format!("SoC: {}", app_state.rk_model),
+            format!("Kernel: {}", kernel),
+        ),
+        (
+            format!("NPU Driver:    {}", app_state.npu_version),
+            format!("Arch: {}", app_state.cpu_arch),
+        ),
+        (
+            format!("RGA Driver:    {}", app_state.rga_version),
+            String::new(),
+        ),
+        (
+            format!("RKNN Runtime:  {}", app_state.rknn_version),
+            String::new(),
+        ),
+        (
+            format!("RKLLM Runtime: {}", app_state.rkllm_version),
+            String::new(),
+        ),
     ];
 
     let rows: Vec<Row> = row_data
@@ -937,7 +1003,11 @@ fn render_npu_panel(f: &mut Frame, area: Rect, app_state: &AppState) {
             Line::from(vec![
                 Span::raw(format!("Core {} ", i)),
                 Span::styled(bar, Style::default().fg(Color::Green)),
-                Span::raw(format!(" {:>3}%{}", load, if i == 0 { freq_str.as_str() } else { "" })),
+                Span::raw(format!(
+                    " {:>3}%{}",
+                    load,
+                    if i == 0 { freq_str.as_str() } else { "" }
+                )),
             ])
         })
         .collect();
@@ -1003,7 +1073,10 @@ fn render_stats_panel(f: &mut Frame, area: Rect, sys: &System, app_state: &AppSt
 
     // Load average
     let load_avg = System::load_average();
-    let load_str = format!("{:.2} {:.2} {:.2}", load_avg.one, load_avg.five, load_avg.fifteen);
+    let load_str = format!(
+        "{:.2} {:.2} {:.2}",
+        load_avg.one, load_avg.five, load_avg.fifteen
+    );
 
     // Total processes
     let total_processes = sys.processes().len();
@@ -1028,17 +1101,36 @@ fn render_stats_panel(f: &mut Frame, area: Rect, sys: &System, app_state: &AppSt
 fn render_io_panel(f: &mut Frame, area: Rect, app_state: &AppState) {
     // Build all row data as owned strings
     let mut row_data = vec![
-        ("Disk Read".to_string(), format!("{}/s", human_bytes_f64(app_state.disk_read_rate))),
-        ("Disk Write".to_string(), format!("{}/s", human_bytes_f64(app_state.disk_write_rate))),
-        ("Net RX (Tot)".to_string(), format!("{}/s", human_bytes_f64(app_state.net_rx_rate))),
-        ("Net TX (Tot)".to_string(), format!("{}/s", human_bytes_f64(app_state.net_tx_rate))),
+        (
+            "Disk Read".to_string(),
+            format!("{}/s", human_bytes_f64(app_state.disk_read_rate)),
+        ),
+        (
+            "Disk Write".to_string(),
+            format!("{}/s", human_bytes_f64(app_state.disk_write_rate)),
+        ),
+        (
+            "Net RX (Tot)".to_string(),
+            format!("{}/s", human_bytes_f64(app_state.net_rx_rate)),
+        ),
+        (
+            "Net TX (Tot)".to_string(),
+            format!("{}/s", human_bytes_f64(app_state.net_tx_rate)),
+        ),
     ];
 
     // Disk space summary
     if let Some((used, total)) = get_disk_total() {
         let percent = (used as f64 / total as f64 * 100.0) as u32;
-        row_data.push(("Disk Space".to_string(), format!("{} / {} ({}%)",
-            human_bytes(used), human_bytes(total), percent)));
+        row_data.push((
+            "Disk Space".to_string(),
+            format!(
+                "{} / {} ({}%)",
+                human_bytes(used),
+                human_bytes(total),
+                percent
+            ),
+        ));
     }
 
     // Add individual network adapters
@@ -1103,15 +1195,18 @@ fn render_temperature_panel(f: &mut Frame, area: Rect, app_state: &AppState) {
         .map(|(name, value)| Row::new(vec![name.as_str(), value.as_str()]))
         .collect();
 
-    let table = Table::new(rows, [Constraint::Percentage(60), Constraint::Percentage(40)])
-        .block(
-            Block::default()
-                .title("Temperatures")
-                .borders(Borders::ALL)
-                .border_style(Style::default().fg(Color::Yellow)),
-        )
-        .column_spacing(1)
-        .style(Style::default().fg(Color::Cyan));
+    let table = Table::new(
+        rows,
+        [Constraint::Percentage(60), Constraint::Percentage(40)],
+    )
+    .block(
+        Block::default()
+            .title("Temperatures")
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(Color::Yellow)),
+    )
+    .column_spacing(1)
+    .style(Style::default().fg(Color::Cyan));
 
     f.render_widget(table, area);
 }
@@ -1131,10 +1226,11 @@ fn render_process_panel(f: &mut Frame, area: Rect, sys: &System, app_state: &App
     let filtered_processes: Vec<_> = if filter_lower.is_empty() {
         top_processes.iter().collect()
     } else {
-        top_processes.iter()
+        top_processes
+            .iter()
             .filter(|p| {
-                p.name.to_lowercase().contains(&filter_lower) ||
-                p.user.to_lowercase().contains(&filter_lower)
+                p.name.to_lowercase().contains(&filter_lower)
+                    || p.user.to_lowercase().contains(&filter_lower)
             })
             .collect()
     };
@@ -1179,7 +1275,8 @@ fn render_process_panel(f: &mut Frame, area: Rect, sys: &System, app_state: &App
         ]));
 
         // Now find and add threads for this process
-        let threads: Vec<_> = filtered_processes.iter()
+        let threads: Vec<_> = filtered_processes
+            .iter()
             .filter(|t| t.is_thread && t.thread_group_id == p.pid)
             .collect();
 
@@ -1242,10 +1339,10 @@ fn render_process_panel(f: &mut Frame, area: Rect, sys: &System, app_state: &App
     let header = Row::new(vec![
         Span::styled(pid_text, pid_style),
         Span::styled("User", bold),
-        Span::styled("S", bold),         // State
+        Span::styled("S", bold), // State
         Span::styled("NI", bold),
         Span::styled("C", bold),
-        Span::styled("THR", bold),       // Threads
+        Span::styled("THR", bold), // Threads
         Span::styled("Time", bold),
         Span::styled(name_text, name_style),
         Span::styled(cpu_text, cpu_style),
@@ -1256,16 +1353,16 @@ fn render_process_panel(f: &mut Frame, area: Rect, sys: &System, app_state: &App
     let table = Table::new(
         rows,
         [
-            Constraint::Length(11),  // PID (wider to accommodate thread prefixes " └─12345")
-            Constraint::Length(10),  // User
-            Constraint::Length(2),   // State
-            Constraint::Length(4),   // Nice
-            Constraint::Length(2),   // CPU core
-            Constraint::Length(4),   // Threads
-            Constraint::Length(9),   // Runtime
+            Constraint::Length(11), // PID (wider to accommodate thread prefixes " └─12345")
+            Constraint::Length(10), // User
+            Constraint::Length(2),  // State
+            Constraint::Length(4),  // Nice
+            Constraint::Length(2),  // CPU core
+            Constraint::Length(4),  // Threads
+            Constraint::Length(9),  // Runtime
             Constraint::Percentage(45), // Name (more space without FDs column)
-            Constraint::Length(6),   // CPU%
-            Constraint::Length(6),   // Mem%
+            Constraint::Length(6),  // CPU%
+            Constraint::Length(6),  // Mem%
         ],
     )
     .header(header)
@@ -1294,33 +1391,74 @@ fn render_help_text(f: &mut Frame, area: Rect, app_state: &AppState) {
 
     let mut help_spans = vec![
         Span::styled("Sort: ", Style::default().fg(Color::Gray)),
-        Span::styled("[C]", Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)),
+        Span::styled(
+            "[C]",
+            Style::default()
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::BOLD),
+        ),
         Span::styled("PU  ", Style::default().fg(Color::Gray)),
-        Span::styled("[M]", Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)),
+        Span::styled(
+            "[M]",
+            Style::default()
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::BOLD),
+        ),
         Span::styled("em  ", Style::default().fg(Color::Gray)),
-        Span::styled("[P]", Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)),
+        Span::styled(
+            "[P]",
+            Style::default()
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::BOLD),
+        ),
         Span::styled("ID  ", Style::default().fg(Color::Gray)),
-        Span::styled("[N]", Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)),
+        Span::styled(
+            "[N]",
+            Style::default()
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::BOLD),
+        ),
         Span::styled("ame", Style::default().fg(Color::Gray)),
         Span::styled("  |  Current: ", Style::default().fg(Color::Gray)),
-        Span::styled(sort_name, Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)),
+        Span::styled(
+            sort_name,
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
+        ),
         Span::styled("  |  ", Style::default().fg(Color::Gray)),
-        Span::styled("[/]", Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)),
+        Span::styled(
+            "[/]",
+            Style::default()
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::BOLD),
+        ),
         Span::styled("Filter", Style::default().fg(Color::Gray)),
     ];
 
     // Show filter status
     if app_state.filter_mode {
         help_spans.push(Span::styled(": ", Style::default().fg(Color::Gray)));
-        help_spans.push(Span::styled(&app_state.filter_text, Style::default().fg(Color::Yellow)));
+        help_spans.push(Span::styled(
+            &app_state.filter_text,
+            Style::default().fg(Color::Yellow),
+        ));
         help_spans.push(Span::styled("_", Style::default().fg(Color::Yellow))); // cursor
     } else if !app_state.filter_text.is_empty() {
         help_spans.push(Span::styled(": ", Style::default().fg(Color::Gray)));
-        help_spans.push(Span::styled(&app_state.filter_text, Style::default().fg(Color::Green)));
+        help_spans.push(Span::styled(
+            &app_state.filter_text,
+            Style::default().fg(Color::Green),
+        ));
     }
 
     help_spans.push(Span::styled("  |  ", Style::default().fg(Color::Gray)));
-    help_spans.push(Span::styled("[Q]", Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)));
+    help_spans.push(Span::styled(
+        "[Q]",
+        Style::default()
+            .fg(Color::Cyan)
+            .add_modifier(Modifier::BOLD),
+    ));
     help_spans.push(Span::styled("uit", Style::default().fg(Color::Gray)));
 
     let help_text = Line::from(help_spans);

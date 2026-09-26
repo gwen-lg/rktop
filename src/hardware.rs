@@ -1,8 +1,8 @@
+use crate::file_cache::{read_cached_file, read_cached_i32, read_cached_u32};
+use goblin::Object;
 use regex::Regex;
 use std::fs;
 use std::path::Path;
-use goblin::Object;
-use crate::file_cache::{read_cached_file, read_cached_u32, read_cached_i32};
 
 /// Get total disk space usage across all mounted filesystems
 pub fn get_disk_total() -> Option<(u64, u64)> {
@@ -22,11 +22,22 @@ pub fn get_disk_total() -> Option<(u64, u64)> {
         let fs_type = parts[2];
 
         // Skip virtual filesystems
-        if fs_type == "tmpfs" || fs_type == "devtmpfs" || fs_type == "proc"
-            || fs_type == "sysfs" || fs_type == "devpts" || fs_type == "cgroup"
-            || fs_type == "cgroup2" || fs_type == "securityfs" || fs_type == "debugfs"
-            || fs_type == "tracefs" || fs_type == "pstore" || fs_type == "bpf"
-            || fs_type == "configfs" || fs_type == "hugetlbfs" || fs_type == "mqueue" {
+        if fs_type == "tmpfs"
+            || fs_type == "devtmpfs"
+            || fs_type == "proc"
+            || fs_type == "sysfs"
+            || fs_type == "devpts"
+            || fs_type == "cgroup"
+            || fs_type == "cgroup2"
+            || fs_type == "securityfs"
+            || fs_type == "debugfs"
+            || fs_type == "tracefs"
+            || fs_type == "pstore"
+            || fs_type == "bpf"
+            || fs_type == "configfs"
+            || fs_type == "hugetlbfs"
+            || fs_type == "mqueue"
+        {
             continue;
         }
 
@@ -58,8 +69,12 @@ pub fn get_network_adapters() -> Vec<String> {
             let name = entry.file_name().to_string_lossy().to_string();
 
             // Filter out virtual/unwanted interfaces
-            if name == "lo" || name.starts_with("dummy") || name.starts_with("veth")
-                || name.starts_with("br-") || name.starts_with("docker") {
+            if name == "lo"
+                || name.starts_with("dummy")
+                || name.starts_with("veth")
+                || name.starts_with("br-")
+                || name.starts_with("docker")
+            {
                 continue;
             }
 
@@ -159,7 +174,10 @@ pub fn get_hwmon_sensors() -> Vec<(String, String)> {
                 let fan_path = path.join(format!("fan{}_input", i));
                 if let Ok(rpm) = fs::read_to_string(&fan_path) {
                     if let Ok(rpm_val) = rpm.trim().parse::<u32>() {
-                        sensors.push((format!("{} Fan{}", device_name, i), format!("{} RPM", rpm_val)));
+                        sensors.push((
+                            format!("{} Fan{}", device_name, i),
+                            format!("{} RPM", rpm_val),
+                        ));
                     }
                 }
             }
@@ -170,7 +188,10 @@ pub fn get_hwmon_sensors() -> Vec<(String, String)> {
                 if let Ok(microwatts) = fs::read_to_string(&power_path) {
                     if let Ok(uw_val) = microwatts.trim().parse::<u64>() {
                         let watts = uw_val as f64 / 1_000_000.0;
-                        sensors.push((format!("{} Power{}", device_name, i), format!("{:.2} W", watts)));
+                        sensors.push((
+                            format!("{} Power{}", device_name, i),
+                            format!("{:.2} W", watts),
+                        ));
                     }
                 }
             }
@@ -215,7 +236,10 @@ pub fn get_cpu_frequencies() -> Vec<u32> {
     let mut cpu_id = 0;
 
     loop {
-        let path = format!("/sys/devices/system/cpu/cpu{}/cpufreq/scaling_cur_freq", cpu_id);
+        let path = format!(
+            "/sys/devices/system/cpu/cpu{}/cpufreq/scaling_cur_freq",
+            cpu_id
+        );
         if let Some(freq_khz) = read_cached_u32(&path) {
             freqs.push(freq_khz / 1000); // Convert to MHz
             cpu_id += 1;
@@ -235,11 +259,22 @@ pub fn get_cpu_freq_ranges() -> Vec<(u32, u32)> {
     let mut cpu_id = 0;
 
     loop {
-        let min_path = format!("/sys/devices/system/cpu/cpu{}/cpufreq/scaling_min_freq", cpu_id);
-        let max_path = format!("/sys/devices/system/cpu/cpu{}/cpufreq/scaling_max_freq", cpu_id);
+        let min_path = format!(
+            "/sys/devices/system/cpu/cpu{}/cpufreq/scaling_min_freq",
+            cpu_id
+        );
+        let max_path = format!(
+            "/sys/devices/system/cpu/cpu{}/cpufreq/scaling_max_freq",
+            cpu_id
+        );
 
-        if let (Ok(min_content), Ok(max_content)) = (fs::read_to_string(&min_path), fs::read_to_string(&max_path)) {
-            if let (Ok(min_khz), Ok(max_khz)) = (min_content.trim().parse::<u32>(), max_content.trim().parse::<u32>()) {
+        if let (Ok(min_content), Ok(max_content)) =
+            (fs::read_to_string(&min_path), fs::read_to_string(&max_path))
+        {
+            if let (Ok(min_khz), Ok(max_khz)) = (
+                min_content.trim().parse::<u32>(),
+                max_content.trim().parse::<u32>(),
+            ) {
                 let range = (min_khz / 1000, max_khz / 1000); // Convert to MHz
 
                 // Only add unique ranges (to handle clusters)
