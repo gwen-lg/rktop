@@ -1,7 +1,7 @@
 use crate::ProcessSortMode;
-use std::collections::HashMap;
 use std::fs;
 use std::sync::Mutex;
+use std::{cmp, collections::HashMap};
 use sysinfo::{Process, System};
 
 // Global cache for UID to username mappings
@@ -82,7 +82,7 @@ pub fn get_top_processes(
             minimal_processes.sort_by_key(|p| p.0);
         }
         ProcessSortMode::PidDesc => {
-            minimal_processes.sort_by(|a, b| b.0.cmp(&a.0));
+            minimal_processes.sort_by_key(|a| cmp::Reverse(a.0));
         }
         ProcessSortMode::NameAsc => {
             minimal_processes.sort_by(|a, b| {
