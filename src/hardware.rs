@@ -43,9 +43,9 @@ pub fn get_disk_total() -> Option<(u64, u64)> {
 
         // Get statvfs info
         if let Ok(stat) = nix::sys::statvfs::statvfs(mount_point) {
-            let block_size = stat.block_size() as u64;
-            let total_blocks = stat.blocks() as u64;
-            let free_blocks = stat.blocks_free() as u64;
+            let block_size = stat.block_size();
+            let total_blocks = stat.blocks();
+            let free_blocks = stat.blocks_free();
 
             total_size += block_size * total_blocks;
             total_used += block_size * (total_blocks - free_blocks);
