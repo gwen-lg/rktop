@@ -166,7 +166,7 @@ fn get_process_cpu_core(pid: u32) -> u32 {
 }
 
 /// Get consolidated process info from /proc/[pid]/status and /proc/[pid]/stat
-/// Returns (tgid, is_thread, num_threads, state, num_fds)
+/// Returns (`tgid`, `is_thread`, `num_threads`, `state`, `num_fds`)
 /// This reads files once instead of multiple times
 fn get_process_extended_info(pid: u32) -> (u32, bool, u32, char, u32) {
     let mut tgid = pid;

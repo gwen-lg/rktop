@@ -87,7 +87,7 @@ pub fn get_network_adapters() -> Vec<String> {
 }
 
 /// Get thermal zone paths (cached at startup to avoid repeated directory scans)
-/// Returns (label, temp_path, type_path) tuples
+/// Returns (`label`, `temp_path`, `type_path`) tuples
 pub fn get_thermal_zone_paths() -> Vec<(String, String, String)> {
     let mut paths = Vec::new();
     let thermal_dir = "/sys/class/thermal";
@@ -408,7 +408,7 @@ pub fn get_board_name() -> String {
     "Unknown Board".to_string()
 }
 
-/// Detect Rockchip SoC model
+/// Detect Rockchip `SoC` model
 pub fn get_rk_model() -> String {
     let board_name = get_board_name();
 
