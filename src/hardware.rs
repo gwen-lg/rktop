@@ -171,27 +171,21 @@ pub fn get_hwmon_sensors() -> Vec<(String, String)> {
 
             // Look for fan speeds
             for i in 1..=10 {
-                let fan_path = path.join(format!("fan{}_input", i));
+                let fan_path = path.join(format!("fan{i}_input"));
                 if let Ok(rpm) = fs::read_to_string(&fan_path) {
                     if let Ok(rpm_val) = rpm.trim().parse::<u32>() {
-                        sensors.push((
-                            format!("{} Fan{}", device_name, i),
-                            format!("{} RPM", rpm_val),
-                        ));
+                        sensors.push((format!("{device_name} Fan{i}"), format!("{rpm_val} RPM")));
                     }
                 }
             }
 
             // Look for power sensors
             for i in 1..=10 {
-                let power_path = path.join(format!("power{}_input", i));
+                let power_path = path.join(format!("power{i}_input"));
                 if let Ok(microwatts) = fs::read_to_string(&power_path) {
                     if let Ok(uw_val) = microwatts.trim().parse::<u64>() {
                         let watts = uw_val as f64 / 1_000_000.0;
-                        sensors.push((
-                            format!("{} Power{}", device_name, i),
-                            format!("{:.2} W", watts),
-                        ));
+                        sensors.push((format!("{device_name} Power{i}"), format!("{watts:.2} W")));
                     }
                 }
             }
@@ -236,10 +230,7 @@ pub fn get_cpu_frequencies() -> Vec<u32> {
     let mut cpu_id = 0;
 
     loop {
-        let path = format!(
-            "/sys/devices/system/cpu/cpu{}/cpufreq/scaling_cur_freq",
-            cpu_id
-        );
+        let path = format!("/sys/devices/system/cpu/cpu{cpu_id}/cpufreq/scaling_cur_freq");
         if let Some(freq_khz) = read_cached_u32(&path) {
             freqs.push(freq_khz / 1000); // Convert to MHz
             cpu_id += 1;
@@ -259,14 +250,8 @@ pub fn get_cpu_freq_ranges() -> Vec<(u32, u32)> {
     let mut cpu_id = 0;
 
     loop {
-        let min_path = format!(
-            "/sys/devices/system/cpu/cpu{}/cpufreq/scaling_min_freq",
-            cpu_id
-        );
-        let max_path = format!(
-            "/sys/devices/system/cpu/cpu{}/cpufreq/scaling_max_freq",
-            cpu_id
-        );
+        let min_path = format!("/sys/devices/system/cpu/cpu{cpu_id}/cpufreq/scaling_min_freq");
+        let max_path = format!("/sys/devices/system/cpu/cpu{cpu_id}/cpufreq/scaling_max_freq");
 
         if let (Ok(min_content), Ok(max_content)) =
             (fs::read_to_string(&min_path), fs::read_to_string(&max_path))
@@ -363,7 +348,7 @@ pub fn get_rga_load() -> Option<Vec<(String, f32)>> {
                 if let Some(name) = line.split(':').nth(1) {
                     let base_name = name.trim().to_string();
                     // Create unique name with index (e.g., "rga3_0", "rga3_1", "rga2")
-                    current_scheduler = format!("{}_{}", base_name, scheduler_index);
+                    current_scheduler = format!("{base_name}_{scheduler_index}");
                 }
             } else if line.starts_with("load =") {
                 if let Some(load_str) = line.split('=').nth(1) {
@@ -440,7 +425,7 @@ pub fn get_cpu_architecture() -> String {
 
         // Build architecture string
         if let Some(arch_val) = arch {
-            let mut result = format!("ARMv{}", arch_val);
+            let mut result = format!("ARMv{arch_val}");
 
             // Collect all core types found
             let mut core_names = Vec::new();

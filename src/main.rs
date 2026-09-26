@@ -658,15 +658,15 @@ fn render_cpu_panel(f: &mut Frame, area: Rect, sys: &System, app_state: &AppStat
             let filled = ((usage / 100.0) * bar_width as f32) as usize;
             let bar = "█".repeat(filled) + &"░".repeat(bar_width - filled);
             Line::from(vec![
-                Span::raw(format!("CPU {} ", i)),
+                Span::raw(format!("CPU {i} ")),
                 Span::styled(bar, Style::default().fg(Color::Cyan)),
-                Span::raw(format!(" {:>3.0}% {:>4} MHz", usage, freq)),
+                Span::raw(format!(" {usage:>3.0}% {freq:>4} MHz")),
             ])
         })
         .collect();
 
     // Add total CPU usage line with sparkline
-    cpu_info.insert(0, Line::from(format!("Total CPU: {:.1}%", total_cpu_usage)));
+    cpu_info.insert(0, Line::from(format!("Total CPU: {total_cpu_usage:.1}%")));
 
     // Add sparkline if we have history
     if !app_state.cpu_history.is_empty() {
@@ -697,7 +697,7 @@ fn render_cpu_panel(f: &mut Frame, area: Rect, sys: &System, app_state: &AppStat
         let ranges_str: Vec<String> = app_state
             .cpu_freq_ranges
             .iter()
-            .map(|(min, max)| format!("{}-{} MHz", min, max))
+            .map(|(min, max)| format!("{min}-{max} MHz"))
             .collect();
         cpu_info.push(Line::from(format!(
             "Freq ranges: {}",
@@ -817,7 +817,7 @@ fn render_memory_panel(f: &mut Frame, area: Rect, sys: &System) {
                     human_bytes(info.used),
                     human_bytes(info.limit),
                     if ratio > 0.0 {
-                        format!("{:.1}", ratio)
+                        format!("{ratio:.1}")
                     } else {
                         "N/A".to_string()
                     }
@@ -906,11 +906,11 @@ fn render_system_panel(f: &mut Frame, area: Rect, app_state: &AppState) {
     let row_data = [
         (
             format!("Board: {}", app_state.board_name),
-            format!("Host: {}", hostname),
+            format!("Host: {hostname}"),
         ),
         (
             format!("SoC: {}", app_state.rk_model),
-            format!("Kernel: {}", kernel),
+            format!("Kernel: {kernel}"),
         ),
         (
             format!("NPU Driver:    {}", app_state.npu_version),
@@ -953,7 +953,7 @@ fn render_system_panel(f: &mut Frame, area: Rect, app_state: &AppState) {
 fn render_gpu_panel(f: &mut Frame, area: Rect, app_state: &AppState) {
     if let Some(usage) = get_gpu_usage() {
         let freq = get_gpu_frequency();
-        let freq_str = freq.map(|f| format!(" {} MHz", f)).unwrap_or_default();
+        let freq_str = freq.map(|f| format!(" {f} MHz")).unwrap_or_default();
 
         let bar_width = 30;
         let filled = ((usage / 100.0) * bar_width as f32) as usize;
@@ -962,7 +962,7 @@ fn render_gpu_panel(f: &mut Frame, area: Rect, app_state: &AppState) {
         let mut lines = vec![Line::from(vec![
             Span::raw("Mali0 "),
             Span::styled(bar, Style::default().fg(Color::Green)),
-            Span::raw(format!(" {:>5.2}%{}", usage, freq_str)),
+            Span::raw(format!(" {usage:>5.2}%{freq_str}")),
         ])];
 
         // Add sparkline if we have history
@@ -991,7 +991,7 @@ fn render_npu_panel(f: &mut Frame, area: Rect, app_state: &AppState) {
     }
 
     let freq = get_npu_frequency();
-    let freq_str = freq.map(|f| format!(" {} MHz", f)).unwrap_or_default();
+    let freq_str = freq.map(|f| format!(" {f} MHz")).unwrap_or_default();
 
     let mut lines: Vec<Line> = loads
         .iter()
@@ -1001,7 +1001,7 @@ fn render_npu_panel(f: &mut Frame, area: Rect, app_state: &AppState) {
             let filled = ((load as f32 / 100.0) * bar_width as f32) as usize;
             let bar = "█".repeat(filled) + &"░".repeat(bar_width - filled);
             Line::from(vec![
-                Span::raw(format!("Core {} ", i)),
+                Span::raw(format!("Core {i} ")),
                 Span::styled(bar, Style::default().fg(Color::Green)),
                 Span::raw(format!(
                     " {:>3}%{}",
@@ -1040,9 +1040,9 @@ fn render_rga_panel(f: &mut Frame, area: Rect) {
                 let filled = ((load / 100.0) * bar_width as f32) as usize;
                 let bar = "█".repeat(filled) + &"░".repeat(bar_width - filled);
                 Line::from(vec![
-                    Span::raw(format!("{:<6} ", name)),
+                    Span::raw(format!("{name:<6} ")),
                     Span::styled(bar, Style::default().fg(Color::Green)),
-                    Span::raw(format!(" {:>5.1}%", load)),
+                    Span::raw(format!(" {load:>5.1}%")),
                 ])
             })
             .collect();
@@ -1064,11 +1064,11 @@ fn render_stats_panel(f: &mut Frame, area: Rect, sys: &System, app_state: &AppSt
     let uptime_hours = (uptime_secs % 86400) / 3600;
     let uptime_mins = (uptime_secs % 3600) / 60;
     let uptime_str = if uptime_days > 0 {
-        format!("{}d {}h {}m", uptime_days, uptime_hours, uptime_mins)
+        format!("{uptime_days}d {uptime_hours}h {uptime_mins}m")
     } else if uptime_hours > 0 {
-        format!("{}h {}m", uptime_hours, uptime_mins)
+        format!("{uptime_hours}h {uptime_mins}m")
     } else {
-        format!("{}m", uptime_mins)
+        format!("{uptime_mins}m")
     };
 
     // Load average
@@ -1082,10 +1082,10 @@ fn render_stats_panel(f: &mut Frame, area: Rect, sys: &System, app_state: &AppSt
     let total_processes = sys.processes().len();
 
     let lines = vec![
-        Line::from(format!("Uptime:     {}", uptime_str)),
-        Line::from(format!("Load Avg:   {}", load_str)),
+        Line::from(format!("Uptime:     {uptime_str}")),
+        Line::from(format!("Load Avg:   {load_str}")),
         Line::from(format!("Governor:   {}", app_state.cpu_governor)),
-        Line::from(format!("Processes:  {}", total_processes)),
+        Line::from(format!("Processes:  {total_processes}")),
         Line::from(format!("TCP Conns:  {}", app_state.tcp_connections)),
     ];
 
@@ -1139,11 +1139,11 @@ fn render_io_panel(f: &mut Frame, area: Rect, app_state: &AppState) {
 
     for (name, (rx_rate, tx_rate)) in adapters {
         row_data.push((
-            format!("{} RX", name),
+            format!("{name} RX"),
             format!("{}/s", human_bytes_f64(*rx_rate)),
         ));
         row_data.push((
-            format!("{} TX", name),
+            format!("{name} TX"),
             format!("{}/s", human_bytes_f64(*tx_rate)),
         ));
     }
@@ -1176,12 +1176,12 @@ fn render_temperature_panel(f: &mut Frame, area: Rect, app_state: &AppState) {
     // Add thermal zone temperatures
     let temps = get_thermal_cached(&app_state.thermal_zone_paths);
     for (name, temp) in temps {
-        row_data.push((name, format!("{}°C", temp)));
+        row_data.push((name, format!("{temp}°C")));
     }
 
     // Add GPU temperature if available
     if let Some(gpu_temp) = get_gpu_temperature() {
-        row_data.push(("GPU".to_string(), format!("{}°C", gpu_temp)));
+        row_data.push(("GPU".to_string(), format!("{gpu_temp}°C")));
     }
 
     // Add hwmon sensors (fans, power)
@@ -1256,9 +1256,9 @@ fn render_process_panel(f: &mut Frame, area: Rect, sys: &System, app_state: &App
         let minutes = (p.runtime % 3600) / 60;
         let seconds = p.runtime % 60;
         let runtime_str = if hours > 0 {
-            format!("{}:{:02}:{:02}", hours, minutes, seconds)
+            format!("{hours}:{minutes:02}:{seconds:02}")
         } else {
-            format!("{}:{:02}", minutes, seconds)
+            format!("{minutes}:{seconds:02}")
         };
 
         rows.push(Row::new(vec![
@@ -1288,9 +1288,9 @@ fn render_process_panel(f: &mut Frame, area: Rect, sys: &System, app_state: &App
             let minutes = (t.runtime % 3600) / 60;
             let seconds = t.runtime % 60;
             let runtime_str = if hours > 0 {
-                format!("{}:{:02}:{:02}", hours, minutes, seconds)
+                format!("{hours}:{minutes:02}:{seconds:02}")
             } else {
-                format!("{}:{:02}", minutes, seconds)
+                format!("{minutes}:{seconds:02}")
             };
 
             rows.push(Row::new(vec![

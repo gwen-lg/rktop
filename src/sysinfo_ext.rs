@@ -137,7 +137,7 @@ pub fn get_top_processes(
 
 fn get_process_nice(pid: u32) -> i32 {
     // Read nice level from /proc/<pid>/stat
-    let stat_path = format!("/proc/{}/stat", pid);
+    let stat_path = format!("/proc/{pid}/stat");
     if let Ok(content) = fs::read_to_string(&stat_path) {
         // The nice value is the 19th field in /proc/pid/stat
         let fields: Vec<&str> = content.split_whitespace().collect();
@@ -152,7 +152,7 @@ fn get_process_nice(pid: u32) -> i32 {
 
 fn get_process_cpu_core(pid: u32) -> u32 {
     // Read current CPU core from /proc/<pid>/stat
-    let stat_path = format!("/proc/{}/stat", pid);
+    let stat_path = format!("/proc/{pid}/stat");
     if let Ok(content) = fs::read_to_string(&stat_path) {
         // The processor (CPU core) is the 39th field in /proc/pid/stat
         let fields: Vec<&str> = content.split_whitespace().collect();
@@ -174,7 +174,7 @@ fn get_process_extended_info(pid: u32) -> (u32, bool, u32, char, u32) {
     let mut state = 'U';
 
     // Read /proc/[pid]/status once for TGID and thread count
-    let status_path = format!("/proc/{}/status", pid);
+    let status_path = format!("/proc/{pid}/status");
     if let Ok(content) = fs::read_to_string(&status_path) {
         for line in content.lines() {
             if line.starts_with("Tgid:") {
@@ -196,7 +196,7 @@ fn get_process_extended_info(pid: u32) -> (u32, bool, u32, char, u32) {
     let is_thread = pid != tgid;
 
     // Read /proc/[pid]/stat once for state
-    let stat_path = format!("/proc/{}/stat", pid);
+    let stat_path = format!("/proc/{pid}/stat");
     if let Ok(content) = fs::read_to_string(&stat_path) {
         // State is the field after the command name (which is in parentheses)
         if let Some(paren_end) = content.rfind(')') {
