@@ -397,9 +397,7 @@ impl AppState {
 
         for (name, data) in networks.list() {
             // Skip interfaces not in our cached adapter list (filters out virtual interfaces)
-            if !self.network_adapters.is_empty()
-                && !self.network_adapters.contains(&name.to_string())
-            {
+            if !self.network_adapters.is_empty() && !self.network_adapters.contains(name) {
                 continue;
             }
 
@@ -413,12 +411,11 @@ impl AppState {
                 if let Some(&(prev_rx, prev_tx)) = self.prev_adapter_stats.get(name) {
                     let rx_rate = (rx.saturating_sub(prev_rx)) as f64 / interval;
                     let tx_rate = (tx.saturating_sub(prev_tx)) as f64 / interval;
-                    self.adapter_rates
-                        .insert(name.to_string(), (rx_rate, tx_rate));
+                    self.adapter_rates.insert(name.clone(), (rx_rate, tx_rate));
                 }
             }
 
-            new_adapter_stats.insert(name.to_string(), (rx, tx));
+            new_adapter_stats.insert(name.clone(), (rx, tx));
         }
 
         if interval > 0.0 {
