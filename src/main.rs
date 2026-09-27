@@ -648,7 +648,7 @@ fn render_cpu_panel(f: &mut Frame, area: Rect, sys: &System, app_state: &AppStat
 
     // Calculate total CPU usage across all cores
     let total_cpu_usage: f32 =
-        cpus.iter().map(|cpu| cpu.cpu_usage()).sum::<f32>() / cpus.len() as f32;
+        cpus.iter().map(sysinfo::Cpu::cpu_usage).sum::<f32>() / cpus.len() as f32;
 
     let mut cpu_info: Vec<Line> = cpus
         .iter()
