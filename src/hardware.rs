@@ -435,11 +435,11 @@ pub fn get_cpu_architecture() -> String {
             }
 
             // Sort and add to result
-            let core_names = if !core_names.is_empty() {
+            let core_names = if core_names.is_empty() {
+                String::new()
+            } else {
                 core_names.sort();
                 format!(" ({})", core_names.join("+"))
-            } else {
-                String::new()
             };
 
             return format!("ARMv{arch_val}{core_names}");
