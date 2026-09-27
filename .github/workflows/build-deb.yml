@@ -11,6 +11,8 @@ on:
 jobs:
   build-deb:
     runs-on: ubuntu-26.04-arm
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
