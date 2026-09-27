@@ -171,6 +171,7 @@ struct AppState {
 }
 
 impl AppState {
+    #[expect(clippy::similar_names)]
     fn new() -> Self {
         // Cache all static system info at startup (expensive operations)
         let board_name = get_board_name();
@@ -1209,6 +1210,7 @@ fn render_temperature_panel(f: &mut Frame, area: Rect, app_state: &AppState) {
     f.render_widget(table, area);
 }
 
+#[expect(clippy::too_many_lines)]
 fn render_process_panel(f: &mut Frame, area: Rect, sys: &System, app_state: &AppState) {
     // Calculate how many processes will fit (area height - borders - header - bottom margin)
     let available_rows = area.height.saturating_sub(4) as usize; // 2 for borders, 1 for header, 1 for margin
