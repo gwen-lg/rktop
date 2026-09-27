@@ -894,15 +894,11 @@ fn render_system_panel(f: &mut Frame, area: Rect, app_state: &AppState) {
     // Use cached values instead of calling expensive functions every frame
 
     // Read hostname and kernel for right column
-    let hostname = std::fs::read_to_string("/proc/sys/kernel/hostname")
-        .ok()
-        .map(|h| h.trim().to_string())
-        .unwrap_or_else(|| "Unknown".to_string());
+    let hostname = std::fs::read_to_string("/proc/sys/kernel/hostname").ok();
+    let hostname = hostname.as_deref().map_or("Unknown", |h| h.trim());
 
-    let kernel = std::fs::read_to_string("/proc/sys/kernel/osrelease")
-        .ok()
-        .map(|k| k.trim().to_string())
-        .unwrap_or_else(|| "Unknown".to_string());
+    let kernel = std::fs::read_to_string("/proc/sys/kernel/osrelease").ok();
+    let kernel = kernel.as_deref().map_or("Unknown", |k| k.trim());
 
     // Build table with two columns
     let row_data = [
