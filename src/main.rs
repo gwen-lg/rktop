@@ -534,29 +534,26 @@ fn run_app(
                             KeyCode::Char('c' | 'C') => {
                                 app_state.process_sort_mode = match app_state.process_sort_mode {
                                     ProcessSortMode::CpuDesc => ProcessSortMode::CpuAsc,
-                                    ProcessSortMode::CpuAsc => ProcessSortMode::CpuDesc,
-                                    _ => ProcessSortMode::CpuDesc,
+                                    _ /* | ProcessSortMode::CpuAsc*/ => ProcessSortMode::CpuDesc,
+
                                 };
                             }
                             KeyCode::Char('m' | 'M') => {
                                 app_state.process_sort_mode = match app_state.process_sort_mode {
                                     ProcessSortMode::MemoryDesc => ProcessSortMode::MemoryAsc,
-                                    ProcessSortMode::MemoryAsc => ProcessSortMode::MemoryDesc,
-                                    _ => ProcessSortMode::MemoryDesc,
+                                    _ /* | ProcessSortMode::MemoryAsc */ => ProcessSortMode::MemoryDesc,
                                 };
                             }
                             KeyCode::Char('p' | 'P') => {
                                 app_state.process_sort_mode = match app_state.process_sort_mode {
                                     ProcessSortMode::PidAsc => ProcessSortMode::PidDesc,
-                                    ProcessSortMode::PidDesc => ProcessSortMode::PidAsc,
-                                    _ => ProcessSortMode::PidAsc,
+                                    _ /* | ProcessSortMode::PidDesc */ => ProcessSortMode::PidAsc,
                                 };
                             }
                             KeyCode::Char('n' | 'N') => {
                                 app_state.process_sort_mode = match app_state.process_sort_mode {
                                     ProcessSortMode::NameAsc => ProcessSortMode::NameDesc,
-                                    ProcessSortMode::NameDesc => ProcessSortMode::NameAsc,
-                                    _ => ProcessSortMode::NameAsc,
+                                    _ /* | ProcessSortMode::NameDesc */ => ProcessSortMode::NameAsc,
                                 };
                             }
                             _ => {}
