@@ -438,7 +438,7 @@ pub fn get_cpu_architecture() -> String {
             let core_names = if core_names.is_empty() {
                 String::new()
             } else {
-                core_names.sort();
+                core_names.sort_unstable();
                 format!(" ({})", core_names.join("+"))
             };
 
