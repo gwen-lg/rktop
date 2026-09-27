@@ -1,4 +1,0 @@
-#!/usr/bin/make -f /usr/bin/make.orig
-%:
-	cargo build --release
-	dpkg-deb --build -1 -f -
