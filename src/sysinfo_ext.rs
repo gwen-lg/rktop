@@ -1,4 +1,5 @@
 use crate::ProcessSortMode;
+use std::cmp::Ordering;
 use std::fs;
 use std::sync::Mutex;
 use std::{cmp, collections::HashMap};
@@ -64,7 +65,6 @@ pub fn get_top_processes(
 
     // Sort the minimal list based on selected mode
     // Use unwrap_or(Equal) to safely handle potential NaN values in CPU/memory percentages
-    use std::cmp::Ordering;
     match sort_mode {
         ProcessSortMode::CpuDesc => {
             minimal_processes.sort_by(|a, b| b.2.partial_cmp(&a.2).unwrap_or(Ordering::Equal));
