@@ -265,7 +265,7 @@ impl AppState {
         let npu_loads = get_npu_load();
         if !npu_loads.is_empty() {
             let avg_npu: f32 =
-                npu_loads.iter().map(|&x| x as f32).sum::<f32>() / npu_loads.len() as f32;
+                npu_loads.iter().map(|&x| f32::from(x)).sum::<f32>() / npu_loads.len() as f32;
             self.npu_history.push_back(avg_npu);
             if self.npu_history.len() > MAX_HISTORY {
                 self.npu_history.pop_front();
@@ -1000,7 +1000,7 @@ fn render_npu_panel(f: &mut Frame, area: Rect, app_state: &AppState) {
         .enumerate()
         .map(|(i, &load)| {
             let bar_width = 20;
-            let filled = ((load as f32 / 100.0) * bar_width as f32) as usize;
+            let filled = ((f32::from(load) / 100.0) * bar_width as f32) as usize;
             let bar = "█".repeat(filled) + &"░".repeat(bar_width - filled);
             Line::from(vec![
                 Span::raw(format!("Core {i} ")),
