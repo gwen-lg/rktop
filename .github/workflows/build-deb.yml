@@ -5,6 +5,8 @@ on:
     branches:
       - debpkgs # temps for test
       - main
+    tags:
+      - "v*.*.*"
 
 jobs:
   build-deb:
@@ -28,3 +30,9 @@ jobs:
         with:
           name: rktop-deb
           path: target/debian/*.deb
+
+      - uses: softprops/action-gh-release@v3
+        if: github.ref_type == 'tag'
+        with:
+          files: target/debian/*.deb
+          generate_release_notes: true
