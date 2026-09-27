@@ -1,0 +1,30 @@
+name: Build Debian Package (ARM64)
+
+on:
+  push:
+    branches:
+      - debpkgs # temps for test
+      - main
+
+jobs:
+  build-deb:
+    runs-on: ubuntu-26.04-arm
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          target: aarch64-unknown-linux-gnu
+      - uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+      - run: cargo install cargo-deb
+
+      - name: Build and Package Debian
+        run: cargo deb
+
+      - name: Upload Debian Package as artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: rktop-deb
+          path: target/debian/*.deb
