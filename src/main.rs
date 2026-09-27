@@ -106,6 +106,7 @@ fn main() -> Result<()> {
     result
 }
 
+#[expect(clippy::struct_excessive_bools)]
 struct AppState {
     prev_disk_read: u64,
     prev_disk_write: u64,
@@ -442,6 +443,7 @@ impl AppState {
     }
 }
 
+#[expect(clippy::too_many_arguments)]
 fn run_app(
     terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
     sys: &mut System,

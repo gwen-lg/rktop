@@ -26,3 +26,9 @@ lto = "fat"           # Enable link-time optimization
 codegen-units = 1     # Better optimization, slower compile
 opt-level = 3         # Maximum optimization
 strip = true          # Strip symbols from binary
+
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+cast_precision_loss = "allow"
+cast_possible_truncation = "allow"
+cast_sign_loss = "allow"
