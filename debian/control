@@ -1,0 +1,7 @@
+Package: rktop
+Version: 0.1.5
+Section: utils
+Priority: optional
+Maintainer: contact@gwenlg.fr
+Architecture: arm64
+Description: High-performance system monitor for Rockchip SoCs (RK3588, RK3399) with real-time CPU, GPU, NPU, RGA, memory, and process monitoring
