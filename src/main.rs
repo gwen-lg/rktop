@@ -1437,6 +1437,7 @@ fn render_help_text(f: &mut Frame, area: Rect, app_state: &AppState) {
     };
 
     let mut help_spans = vec![
+        Span::from(format!("v{} ", env!("CARGO_PKG_VERSION"))),
         Span::styled("Sort: ", Style::default().fg(Color::Gray)),
         Span::styled(
             "[C]",
