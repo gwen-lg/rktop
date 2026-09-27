@@ -21,8 +21,14 @@ mod file_cache;
 mod hardware;
 mod sysinfo_ext;
 
-use hardware::*;
-use sysinfo_ext::*;
+use hardware::{
+    get_board_name, get_cpu_architecture, get_cpu_freq_ranges, get_cpu_frequencies, get_disk_total,
+    get_gpu_frequency, get_gpu_temperature, get_gpu_usage, get_hwmon_sensors,
+    get_librkllmrt_version, get_librknnrt_version, get_network_adapters, get_npu_driver_version,
+    get_npu_frequency, get_npu_load, get_rga_load, get_rga_version, get_rk_model,
+    get_thermal_cached, get_thermal_zone_paths,
+};
+use sysinfo_ext::{get_cpu_stats, get_top_processes, get_zram_info, CpuStats};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ProcessSortMode {
