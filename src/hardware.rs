@@ -503,15 +503,13 @@ pub fn get_npu_driver_version() -> String {
 /// Extract version string from binary using goblin
 fn extract_version_from_binary(path: &str, pattern: &str) -> String {
     // Try to read the binary file
-    let buffer = match fs::read(path) {
-        Ok(buf) => buf,
-        Err(_) => return "Not Detected".to_string(),
+    let Ok(buffer) = fs::read(path) else {
+        return "Not Detected".to_string();
     };
 
     // Parse the binary with goblin
-    let obj = match Object::parse(&buffer) {
-        Ok(obj) => obj,
-        Err(_) => return "Not Detected".to_string(),
+    let Ok(obj) = Object::parse(&buffer) else {
+        return "Not Detected".to_string();
     };
 
     // For ELF binaries, search through the .rodata section
